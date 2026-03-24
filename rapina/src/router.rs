@@ -26,7 +26,9 @@ pub(crate) struct Route {
     pub(crate) handler_name: String,
     pub(crate) response_schema: Option<serde_json::Value>,
     pub(crate) error_responses: Vec<ErrorVariant>,
-    handler: HandlerFn,
+    pub(crate) tags: Vec<String>,
+    pub(crate) description: Option<String>,
+    pub(crate) handler: HandlerFn,
 }
 
 /// The HTTP router for matching requests to handlers.
@@ -73,6 +75,8 @@ impl Router {
         handler_name: &str,
         response_schema: Option<serde_json::Value>,
         error_responses: Vec<ErrorVariant>,
+        tags: Vec<String>,
+        description: Option<String>,
         handler: F,
     ) -> Self
     where
@@ -95,6 +99,8 @@ impl Router {
             handler_name: handler_name.to_string(),
             response_schema,
             error_responses,
+            tags,
+            description,
             handler,
         };
 
@@ -112,7 +118,16 @@ impl Router {
         Fut: Future<Output = Out> + Send + 'static,
         Out: IntoResponse + 'static,
     {
-        self.route_named(method, pattern, "handler", None, Vec::new(), handler)
+        self.route_named(
+            method,
+            pattern,
+            "handler",
+            None,
+            Vec::new(),
+            Vec::new(),
+            None,
+            handler,
+        )
     }
 
     /// Adds a GET route with a handler name.
@@ -128,6 +143,8 @@ impl Router {
             handler_name,
             None,
             Vec::new(),
+            Vec::new(),
+            None,
             handler,
         )
     }
@@ -145,6 +162,8 @@ impl Router {
             handler_name,
             None,
             Vec::new(),
+            Vec::new(),
+            None,
             handler,
         )
     }
@@ -157,6 +176,8 @@ impl Router {
             H::NAME,
             H::response_schema(),
             H::error_responses(),
+            H::tags(),
+            H::description(),
             move |req, params, state| {
                 let h = handler.clone();
                 async move { h.call(req, params, state).await }
@@ -172,6 +193,8 @@ impl Router {
             H::NAME,
             H::response_schema(),
             H::error_responses(),
+            H::tags(),
+            H::description(),
             move |req, params, state| {
                 let h = handler.clone();
                 async move { h.call(req, params, state).await }
@@ -187,6 +210,8 @@ impl Router {
             H::NAME,
             H::response_schema(),
             H::error_responses(),
+            H::tags(),
+            H::description(),
             move |req, params, state| {
                 let h = handler.clone();
                 async move { h.call(req, params, state).await }
@@ -202,6 +227,8 @@ impl Router {
             H::NAME,
             H::response_schema(),
             H::error_responses(),
+            H::tags(),
+            H::description(),
             move |req, params, state| {
                 let h = handler.clone();
                 async move { h.call(req, params, state).await }
@@ -239,6 +266,8 @@ impl Router {
                     &route.handler_name,
                     route.response_schema.clone(),
                     route.error_responses.clone(),
+                    route.tags.clone(),
+                    route.description.clone(),
                 )
             })
             .collect()
@@ -472,6 +501,8 @@ mod tests {
             "update_user",
             None,
             Vec::new(),
+            Vec::new(),
+            None,
             |_req, _params, _state| async { StatusCode::OK },
         );
 
